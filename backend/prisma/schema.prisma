@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ENDED_EARLY
+}
+
+enum EndedBy {
+  USER
+  SYSTEM
+  ADMIN
+}
+
+model User {
+  id               String             @id @default(cuid())
+  name             String
+  email            String             @unique
+  passwordHash     String
+  role             Role               @default(USER)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  submissions      Submission[]
+  sessions         InterviewSession[]
+  adminNotes       AdminNote[]
+}
+
+model Submission {
+  id                String             @id @default(cuid())
+  userId            String
+  title             String
+  originalPrompt    String             @db.Text
+  generatedContent  String             @db.Text
+  uploadedFileUrl   String?
+  uploadedFileName  String?
+  uploadedFileType  String?
+  inputType         String
+  sourceModelLabel  String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions          InterviewSession[]
+
+  @@index([userId, createdAt])
+  @@index([inputType, sourceModelLabel])
+}
+
+model InterviewSession {
+  id                   String             @id @default(cuid())
+  submissionId         String
+  userId               String
+  status               SessionStatus      @default(ACTIVE)
+  startedAt            DateTime           @default(now())
+  endedAt              DateTime?
+  endedBy              EndedBy?
+  endReason            String?
+  completionScore      Int                @default(0)
+  overallSentiment     String?
+  continueSignalFinal  String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  submission           Submission         @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages             SessionMessage[]
+  summary              SessionSummary?
+  adminNotes           AdminNote[]
+
+  @@index([userId, status, startedAt])
+  @@index([submissionId])
+}
+
+model SessionMessage {
+  id             String             @id @default(cuid())
+  sessionId      String
+  role           String
+  content        String             @db.Text
+  sentimentLabel String?
+  offTopicFlag   Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  session        InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model SessionSummary {
+  id                    String             @id @default(cuid())
+  sessionId             String             @unique
+  shortSummary          String             @db.Text
+  strengths             Json
+  weaknesses            Json
+  recommendations       Json
+  sentimentTimeline     Json
+  engagementLevel       String
+  summaryConfidence     String
+  adminStatus           String             @default("new")
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  session               InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model AdminNote {
+  id          String             @id @default(cuid())
+  sessionId   String
+  adminId     String
+  note        String             @db.Text
+  createdAt   DateTime           @default(now())
+  session     InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  admin       User               @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}

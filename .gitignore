@@ -1,0 +1,39 @@
+# ─── Dependencies ────────────────────────────────────────────────
+**/node_modules/
+**/dist/
+**/build/
+**/.next/
+**/.cache/
+
+# ─── Python environments ──────────────────────────────────────────
+ml/.venv/
+ml/.venv312/
+ml/venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+
+# ─── Environment / secrets (NEVER commit) ────────────────────────
+**/.env
+**/.env.local
+**/.env.*.local
+
+# ─── ML model artifacts (large binaries — train locally) ─────────
+ml/artifacts/
+
+# ─── Uploaded user files ─────────────────────────────────────────
+backend/uploads/
+
+# ─── Scratch / temp files ────────────────────────────────────────
+fix_data.py
+fix_policy.py
+normalize_labels.py
+check_data.py
+
+# ─── OS / editor ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

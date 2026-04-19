@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@100..700,0..1,0,24&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-background: #faf4ff;
+    --color-surface: #faf4ff;
+    --color-surface-lowest: #ffffff;
+    --color-surface-low: #f4eeff;
+    --color-surface-container: #ece4ff;
+    --color-surface-high: #e6deff;
+    --color-surface-highest: #e1d8ff;
+    --color-surface-variant: #e1d8ff;
+    --color-surface-tint: #4647d3;
+
+    --color-primary: #4647d3;
+    --color-primary-container: #9396ff;
+    --color-primary-dim: #3939c7;
+    --color-on-primary: #f4f1ff;
+    --color-on-primary-container: #0a0081;
+
+    --color-secondary: #b00d6a;
+    --color-secondary-container: #ffc1d6;
+    --color-on-secondary-container: #8e0054;
+
+    --color-tertiary: #006576;
+    
+    --color-on-surface: #302950;
+    --color-on-surface-variant: #5e5680;
+    
+    --color-error: #b41340;
+    --color-outline: #79719d;
+    --color-outline-variant: #b0a7d6;
+
+    --font-headline: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'Manrope', sans-serif;
+    --font-label: 'Manrope', sans-serif;
+  }
+
+  .dark {
+    --color-background: #0c0e18;
+    --color-surface: #0c0e18;
+    --color-surface-lowest: #000000;
+    --color-surface-low: #10131f;
+    --color-surface-container: #161926;
+    --color-surface-high: #1c1f2e;
+    --color-surface-highest: #222535;
+    --color-surface-variant: #222535;
+    --color-surface-tint: #a8a4ff;
+
+    --color-primary: #a8a4ff;
+    --color-primary-container: #9995ff;
+    --color-primary-dim: #675df9;
+    --color-on-primary: #1e009f;
+    --color-on-primary-container: #16007d;
+
+    --color-secondary: #9492ff;
+    --color-secondary-container: #3323cc;
+    --color-on-secondary-container: #cecbff;
+
+    --color-tertiary: #d674ff;
+    
+    --color-on-surface: #edecfd;
+    --color-on-surface-variant: #a9aab9;
+    
+    --color-error: #ff6e84;
+    --color-outline: #737483;
+    --color-outline-variant: #464754;
+
+    --font-headline: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-label: 'Inter', sans-serif;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .glass-panel {
+    background-color: color-mix(in srgb, var(--color-surface-variant) 50%, transparent);
+    backdrop-filter: blur(20px);
+  }
+  .ghost-border {
+    border: 1px solid color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+  }
+  .ghost-border-bottom {
+    border-bottom: 1px solid color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+  }
+  .ambient-shadow {
+    box-shadow: 0 20px 40px -10px color-mix(in srgb, var(--color-on-surface) 6%, transparent);
+  }
+  .glow-shadow {
+    box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-primary-dim) 15%, transparent);
+  }
+}
+
+.material-symbols-outlined { 
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; 
+}
