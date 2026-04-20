@@ -3,45 +3,51 @@
  */
 
 import dotenv from "dotenv";
+import path from "path";
 dotenv.config();
 
 let cachedApp;
 
 async function getApp() {
   if (cachedApp) return cachedApp;
-  console.log("[Init] Importing app.js...");
-  const { createApp } = await import("../backend/src/app.js");
+  console.log("[Init] Importing app.js from backend/src...");
+  
+  // Use a more robust way to resolve the path in serverless
+  const appPath = path.resolve(process.cwd(), "backend/src/app.js");
+  const { createApp } = await import(appPath);
+  
   cachedApp = createApp();
   return cachedApp;
 }
 
 export default async function handler(req, res) {
-  // Log EVERYTHING to Vercel logs
   console.log(`[Diagnostic] Method: ${req.method}, URL: ${req.url}`);
 
-  // Absolute most basic response
-  if (req.url.includes("diagnostic")) {
+  // 1. Basic Health/Diagnostic Checks (broad matching)
+  if (req.url.includes("diagnostic") || req.url.includes("health/basic")) {
     return res.status(200).json({
       status: "diagnostic-ok",
-      url: req.url,
+      received_url: req.url,
       method: req.method,
-      cwd: process.cwd()
+      cwd: process.cwd(),
+      env_check: {
+        db: !!process.env.DATABASE_URL,
+        vercel: !!process.env.VERCEL
+      }
     });
   }
 
   try {
     const app = await getApp();
+    // 2. Pass request to Express
     return app(req, res);
   } catch (err) {
     console.error("[FATAL] Error in serverless handler:", err);
     return res.status(500).json({
-      error: "Serverless Initialization Error",
+      error: "Serverless Execution Error",
       message: err.message,
       stack: err.stack,
-      env_check: {
-        db: !!process.env.DATABASE_URL,
-        jwt: !!process.env.JWT_SECRET
-      }
+      hint: "Check environment variables and Prisma generation logs."
     });
   }
 }
