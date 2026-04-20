@@ -1,20 +1,32 @@
 /**
  * api/index.js — Vercel Serverless Function entry point.
- *
- * All /api/* traffic is rewritten here by vercel.json.
- * Uses a static import (not dynamic) so Vercel's bundler can trace the module graph.
- *
- * ML note: The FastAPI inference server cannot run on Vercel.
- * Set LLM_PROVIDER_MODE=api in Vercel env vars to use Gemini directly.
+ * Static import so Vercel's bundler can trace the module graph.
  */
 
-// Load environment variables FIRST before any other module runs
+// IMPORTANT: load env vars first before any other module executes
 import dotenv from "dotenv";
 dotenv.config();
 
 import { createApp } from "../backend/src/app.js";
 
-const app = createApp();
+let app;
+let initError;
 
-// Vercel expects the default export to be the request handler
-export default app;
+try {
+  app = createApp();
+} catch (err) {
+  initError = err;
+  console.error("[FATAL] App failed to initialize:", err);
+}
+
+// Default export: if init failed, return 500 with real error so we can debug
+export default function handler(req, res) {
+  if (initError) {
+    return res.status(500).json({
+      error: "App failed to initialize",
+      message: initError.message,
+      stack: process.env.NODE_ENV !== "production" ? initError.stack : undefined,
+    });
+  }
+  return app(req, res);
+}
