@@ -29,8 +29,10 @@ const schema = z.object({
 const parsed = schema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("Invalid environment configuration:", parsed.error.flatten().fieldErrors);
-  throw new Error("Environment validation failed");
+  const fieldErrors = parsed.error.flatten().fieldErrors;
+  console.error("Invalid environment configuration:", fieldErrors);
+  const failingFields = Object.keys(fieldErrors).join(", ");
+  throw new Error(`Environment validation failed. Missing or invalid variables: ${failingFields}`);
 }
 
 export const env = {

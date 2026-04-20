@@ -1,32 +1,44 @@
 /**
- * api/index.js — Vercel Serverless Function entry point.
- * Static import so Vercel's bundler can trace the module graph.
+ * api/index.js — Robust Vercel Serverless Function entry point.
  */
 
-// IMPORTANT: load env vars first before any other module executes
+// Load env vars at the very beginning
 import dotenv from "dotenv";
 dotenv.config();
 
-import { createApp } from "../backend/src/app.js";
+let cachedApp;
 
-let app;
-let initError;
-
-try {
-  app = createApp();
-} catch (err) {
-  initError = err;
-  console.error("[FATAL] App failed to initialize:", err);
+/**
+ * Lazily loads and initializes the Express application.
+ * This prevents top-level crashes and allows us to catch errors during the loading phase.
+ */
+async function getApp() {
+  if (cachedApp) return cachedApp;
+  
+  // Dynamic import to catch errors in backend/src/app.js or its dependencies (like env.js)
+  const { createApp } = await import("../backend/src/app.js");
+  cachedApp = createApp();
+  return cachedApp;
 }
 
-// Default export: if init failed, return 500 with real error so we can debug
-export default function handler(req, res) {
-  if (initError) {
+export default async function handler(req, res) {
+  // Basic health check that doesn't depend on the full app
+  if (req.url === "/api/health/basic") {
+    return res.status(200).json({ status: "basic-ok", timestamp: new Date().toISOString() });
+  }
+
+  try {
+    const app = await getApp();
+    return app(req, res);
+  } catch (err) {
+    console.error("[FATAL] Failed to initialize or run application:", err);
+    
+    // Return a readable error message to the client
     return res.status(500).json({
-      error: "App failed to initialize",
-      message: initError.message,
-      stack: process.env.NODE_ENV !== "production" ? initError.stack : undefined,
+      error: "Initialization Failure",
+      message: err.message,
+      details: err.stack,
+      hint: "Check Vercel environment variables and Prisma generation logs.",
     });
   }
-  return app(req, res);
 }

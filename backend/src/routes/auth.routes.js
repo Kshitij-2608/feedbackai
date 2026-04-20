@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 
-import { prisma } from "../config/prisma.js";
+import { prisma, withRetry } from "../config/prisma.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { comparePassword, hashPassword, signToken } from "../lib/auth.js";
 import { HttpError } from "../lib/http-error.js";
@@ -27,16 +27,16 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { name, email, password } = req.validated;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await withRetry(() => prisma.user.findUnique({ where: { email } }));
     if (existing) {
       throw new HttpError(409, "An account with this email already exists");
     }
 
     const passwordHash = await hashPassword(password);
-    const user = await prisma.user.create({
+    const user = await withRetry(() => prisma.user.create({
       data: { name, email, passwordHash },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
-    });
+    }));
 
     const token = signToken(user);
     res.status(201).json({ user, token });
@@ -49,7 +49,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email, password } = req.validated;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await withRetry(() => prisma.user.findUnique({ where: { email } }));
     if (!user) {
       throw new HttpError(401, "Invalid email or password");
     }

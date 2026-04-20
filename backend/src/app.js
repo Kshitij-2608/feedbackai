@@ -37,7 +37,7 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use("/uploads", express.static(uploadsDir));
 
-  app.get("/health", (_req, res) => {
+  app.get(["/health", "/api/health"], (_req, res) => {
     res.json({
       status: "ok",
       environment: env.nodeEnv,
