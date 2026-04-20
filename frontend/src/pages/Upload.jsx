@@ -169,12 +169,12 @@ export default function Upload() {
             onChange={handleChange('inputType')}
             className="w-full bg-transparent py-2 text-on-surface text-sm font-body outline-none border-b border-outline-variant/20 focus:border-b-primary"
           >
-          <option value="text">Text / Prompt</option>
-          <option value="pdf">Document (PDF)</option>
-          <option value="image">Image / UI Design</option>
-          <option value="audio">Audio / Voice</option>
-          <option value="video">Video / Animation</option>
-          <option value="code">Code / Script</option>
+          <option value="text" className="bg-[#1a1a1a] text-on-surface">Text / Prompt</option>
+          <option value="pdf" className="bg-[#1a1a1a] text-on-surface">Document (PDF)</option>
+          <option value="image" className="bg-[#1a1a1a] text-on-surface">Image / UI Design</option>
+          <option value="audio" className="bg-[#1a1a1a] text-on-surface">Audio / Voice</option>
+          <option value="video" className="bg-[#1a1a1a] text-on-surface">Video / Animation</option>
+          <option value="code" className="bg-[#1a1a1a] text-on-surface">Code / Script</option>
         </select>
       </div>
         
@@ -192,14 +192,6 @@ export default function Upload() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        {acceptedTypes.map(({ icon: Icon, label, color }) => (
-          <div key={label} className="flex items-center gap-2.5 p-3.5 rounded-xl bg-surface-container">
-            <Icon size={16} className={color} />
-            <span className="text-xs text-on-surface-variant font-label">{label}</span>
-          </div>
-        ))}
-      </div>
 
       <div
         onDragOver={(e) => {
