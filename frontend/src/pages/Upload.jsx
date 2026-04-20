@@ -60,10 +60,14 @@ export default function Upload() {
       return;
     }
 
-    if (!form.title || !form.originalPrompt || !form.generatedContent) {
-      setError('Please fill in the title, original prompt, and generated content before continuing.');
+    // Validation: Title and Prompt are always required.
+    // Generated Content is required UNLESS a file is attached.
+    if (!form.title || !form.originalPrompt || (!form.generatedContent && !file)) {
+      setError('Please fill in the prompt and either paste the content or attach a file.');
       return;
     }
+
+    const finalGeneratedContent = form.generatedContent || `[File Attachment: ${file?.name || 'Uploaded Content'}]`;
 
     setError('');
     setUploadState(STATES.uploading);
@@ -73,7 +77,7 @@ export default function Upload() {
       const payload = new FormData();
       payload.append('title', form.title);
       payload.append('originalPrompt', form.originalPrompt);
-      payload.append('generatedContent', form.generatedContent);
+      payload.append('generatedContent', finalGeneratedContent);
       payload.append('inputType', form.inputType);
       payload.append('sourceModelLabel', form.sourceModelLabel);
 
