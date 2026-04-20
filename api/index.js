@@ -12,7 +12,6 @@ async function getApp() {
   if (cachedApp) return cachedApp;
   console.log("[Init] Importing app.js from backend/src...");
   
-  // Use a more robust way to resolve the path in serverless
   const appPath = path.resolve(process.cwd(), "backend/src/app.js");
   const { createApp } = await import(appPath);
   
@@ -21,18 +20,19 @@ async function getApp() {
 }
 
 export default async function handler(req, res) {
-  console.log(`[Diagnostic] Method: ${req.method}, URL: ${req.url}`);
+  const url = req.url || "";
+  console.log(`[Diagnostic] Method: ${req.method}, URL: ${url}`);
 
-  // 1. Basic Health/Diagnostic Checks (broad matching)
-  if (req.url.includes("diagnostic") || req.url.includes("health/basic")) {
+  // 1. Basic Health/Diagnostic Checks (broadest possible matching)
+  if (url.toLowerCase().includes("diagnostic") || url.toLowerCase().includes("health")) {
     return res.status(200).json({
       status: "diagnostic-ok",
-      received_url: req.url,
+      received_url: url,
       method: req.method,
       cwd: process.cwd(),
+      is_vercel: !!process.env.VERCEL,
       env_check: {
-        db: !!process.env.DATABASE_URL,
-        vercel: !!process.env.VERCEL
+        db: !!process.env.DATABASE_URL
       }
     });
   }

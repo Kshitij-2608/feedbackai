@@ -47,7 +47,13 @@ export function createApp() {
     });
   });
 
+  // On Vercel, the function is mounted at /api, so the incoming req.url 
+  // might have the /api prefix already stripped or still present depending on rewrites.
+  // We mount at both to be safe.
   app.use("/api", apiRouter);
+  if (isVercel) {
+    app.use("/", apiRouter);
+  }
   app.use(notFoundHandler);
   app.use(errorHandler);
 
