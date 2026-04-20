@@ -5,10 +5,17 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsDir = path.resolve(__dirname, "../../uploads");
+const isVercel = process.env.VERCEL === "1" || !!process.env.VERCEL;
+const uploadsDir = isVercel 
+  ? path.join("/tmp", "uploads")
+  : path.resolve(__dirname, "../../uploads");
 
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (err) {
+    console.warn(`[Upload] Could not create uploads directory at ${uploadsDir}:`, err.message);
+  }
 }
 
 const storage = multer.diskStorage({

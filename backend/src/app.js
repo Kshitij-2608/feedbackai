@@ -9,8 +9,10 @@ import { apiRouter } from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.resolve(__dirname, "../uploads");
+const isVercel = process.env.VERCEL === "1" || !!process.env.VERCEL;
+const uploadsDir = isVercel
+  ? path.join("/tmp", "uploads")
+  : path.resolve(__dirname, "../uploads");
 
 export function createApp() {
   const app = express();
