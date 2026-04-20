@@ -1,26 +1,18 @@
 /**
  * api/index.js — Vercel Serverless Function entry point.
  *
- * Routes: all /api/* traffic is rewritten here by vercel.json.
- * The Express app is imported from backend/src and exported as the default
- * handler that Vercel wraps in its serverless runtime.
+ * All /api/* traffic is rewritten here by vercel.json.
+ * Uses a static import (not dynamic) so Vercel's bundler can trace the module graph.
  *
- * ML Inference Server note:
- * The inference server (FastAPI/Python) cannot run on Vercel.
- * When LLM_PROVIDER_MODE=api the backend uses Gemini directly.
- * Set ML_MODEL_URL in env vars only if you have a separate hosted ML server.
+ * ML note: The FastAPI inference server cannot run on Vercel.
+ * Set LLM_PROVIDER_MODE=api in Vercel env vars to use Gemini directly.
  */
 
-import path from "path";
-import { fileURLToPath } from "url";
+// Load environment variables FIRST before any other module runs
+import dotenv from "dotenv";
+dotenv.config();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Import the Express app factory from the backend source
-// Using explicit path resolution so Vercel can trace the module graph
-const { createApp } = await import(
-  new URL("../backend/src/app.js", import.meta.url).href
-);
+import { createApp } from "../backend/src/app.js";
 
 const app = createApp();
 
