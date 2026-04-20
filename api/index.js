@@ -22,8 +22,10 @@ async function getApp() {
 }
 
 export default async function handler(req, res) {
+  console.log(`[Request] ${req.method} ${req.url}`);
+
   // Basic health check that doesn't depend on the full app
-  if (req.url === "/api/health/basic") {
+  if (req.url && req.url.includes("/health/basic")) {
     return res.status(200).json({ status: "basic-ok", timestamp: new Date().toISOString() });
   }
 
