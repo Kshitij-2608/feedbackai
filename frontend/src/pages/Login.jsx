@@ -33,6 +33,11 @@ export default function Login() {
     try {
       let authedUser;
       if (mode === 'signup') {
+        if (form.password.length < 8) {
+          setError('Password must be at least 8 characters long.');
+          setSubmitting(false);
+          return;
+        }
         authedUser = await signup(form);
       } else {
         authedUser = await login({ email: form.email, password: form.password });

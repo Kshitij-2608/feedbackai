@@ -13,7 +13,7 @@ const acceptedTypes = [
   { icon: FileText, label: 'PDF / Text', accept: '.pdf,.txt,.doc,.docx', color: 'text-primary' },
   { icon: Music, label: 'Audio', accept: '.mp3,.wav,.m4a,.ogg', color: 'text-tertiary' },
   { icon: Video, label: 'Video', accept: '.mp4,.webm,.mov', color: 'text-secondary' },
-  { icon: Code, label: 'Code / JSON', accept: '.py,.js,.json,.yaml,.md', color: 'text-primary-dim' },
+  { icon: Code, label: 'Images / Art', accept: '.jpg,.jpeg,.png,.webp,.svg', color: 'text-primary-dim' },
 ];
 
 const STATES = { idle: 'idle', uploading: 'uploading', success: 'success' };
@@ -25,11 +25,11 @@ export default function Upload() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    title: '',
+    title: 'New Feedback Session',
     originalPrompt: '',
     generatedContent: '',
-    inputType: 'pdf',
-    sourceModelLabel: 'Uploaded Input',
+    inputType: 'text',
+    sourceModelLabel: 'GenAI Prototype',
   });
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -116,59 +116,76 @@ export default function Upload() {
 
       <div className="mb-10">
         <p className="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">Step 1 of 2</p>
-        <h1 className="font-headline font-bold text-3xl text-on-surface">Upload Content</h1>
-        <p className="text-on-surface-variant mt-2">Upload your AI model output and store the prompt separately so the interviewer can ask grounded questions.</p>
+        <h1 className="font-headline font-bold text-3xl text-on-surface">Gather Feedback</h1>
+        <p className="text-on-surface-variant mt-2 max-w-2xl">
+          Paste the original prompt and the AI output below. 
+          <strong> How it works:</strong> Our diagnostic model uses this content as context to conduct a deep-dive interview, 
+          identifying strengths, hallucinations, or areas for improvement in your AI's response.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <Input id="submission-title" label="Submission Title" value={form.title} onChange={handleChange('title')} placeholder="Product review assistant output" />
-        <Input id="source-model" label="Source Model Label" value={form.sourceModelLabel} onChange={handleChange('sourceModelLabel')} placeholder="Gemini / GPT / Internal Agent / PDF Batch" />
-      </div>
-
-      <div className="mb-8">
-        <label htmlFor="input-type" className="text-xs font-label font-medium text-on-surface-variant uppercase tracking-[0.08em]">
-          Input Type
-        </label>
-        <select
-          id="input-type"
-          value={form.inputType}
-          onChange={handleChange('inputType')}
-          className="w-full bg-transparent px-0 py-2.5 text-on-surface text-sm font-body outline-none border-b border-outline-variant/20 transition-all duration-300 focus:border-b-primary"
-        >
-          <option value="pdf">PDF</option>
-          <option value="text">Text</option>
-          <option value="audio">Audio</option>
-          <option value="video">Video</option>
-          <option value="code">Code</option>
-        </select>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8 mb-8">
         <div className="flex flex-col gap-2">
           <label htmlFor="original-prompt" className="text-xs font-label font-medium text-on-surface-variant uppercase tracking-[0.08em]">
-            Original Prompt
+            1. User's Original Prompt
           </label>
           <textarea
             id="original-prompt"
-            rows={5}
+            rows={6}
             value={form.originalPrompt}
             onChange={handleChange('originalPrompt')}
-            placeholder="Paste the prompt used with your GenAI system."
+            placeholder="What did the user ask the AI?"
             className="w-full rounded-2xl bg-surface-container px-4 py-4 text-on-surface text-sm outline-none border border-outline-variant/20 focus:border-primary resize-y"
           />
         </div>
 
         <div className="flex flex-col gap-2">
           <label htmlFor="generated-content" className="text-xs font-label font-medium text-on-surface-variant uppercase tracking-[0.08em]">
-            Generated Content
+            2. AI Generated Content
           </label>
           <textarea
             id="generated-content"
-            rows={8}
+            rows={6}
             value={form.generatedContent}
             onChange={handleChange('generatedContent')}
-            placeholder="Paste the generated content here."
+            placeholder="What was the AI's response? (Paste text, or attach a file below)"
             className="w-full rounded-2xl bg-surface-container px-4 py-4 text-on-surface text-sm outline-none border border-outline-variant/20 focus:border-primary resize-y"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-6 mb-8 p-6 rounded-2xl bg-surface-container/30 border border-outline-variant/10">
+        <div className="flex-1 min-w-[200px]">
+          <label htmlFor="input-type" className="text-xs font-label font-medium text-on-surface-variant uppercase tracking-[0.08em] block mb-2">
+            Content Category
+          </label>
+          <select
+            id="input-type"
+            value={form.inputType}
+            onChange={handleChange('inputType')}
+            className="w-full bg-transparent py-2 text-on-surface text-sm font-body outline-none border-b border-outline-variant/20 focus:border-b-primary"
+          >
+          <option value="text">Text / Prompt</option>
+          <option value="pdf">Document (PDF)</option>
+          <option value="image">Image / UI Design</option>
+          <option value="audio">Audio / Voice</option>
+          <option value="video">Video / Animation</option>
+          <option value="code">Code / Script</option>
+        </select>
+      </div>
+
+        </div>
+        
+        <div className="flex-1 min-w-[200px]">
+          <label htmlFor="submission-title" className="text-xs font-label font-medium text-on-surface-variant uppercase tracking-[0.08em] block mb-2">
+            Session Title (Optional)
+          </label>
+          <input
+            id="submission-title"
+            type="text"
+            value={form.title}
+            onChange={handleChange('title')}
+            className="w-full bg-transparent py-2 text-on-surface text-sm font-body outline-none border-b border-outline-variant/20 focus:border-b-primary"
           />
         </div>
       </div>
