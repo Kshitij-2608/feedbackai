@@ -1,70 +1,95 @@
 # FeedbackAI — Project Status
 
-> Last updated: 2026-04-19
+> Last updated: 2026-04-20
 
 ---
 
-## ✅ Current Status: Fully Functional — Ready for Vercel Deployment
+## ✅ Current Status: Deployed on Vercel — Debugging DB Connection
 
-All core systems are operational and end-to-end tested locally.
+| Service | Status | URL/Notes |
+|---|---|---|
+| **Frontend** | ✅ Live | https://feedbackai.vercel.app |
+| **Backend API** | ✅ Deployed | `/api/*` via Vercel serverless |
+| **Neon PostgreSQL** | ✅ Provisioned | Singapore region, free tier |
+| **Gemini AI** | ✅ Wired | `gemini-2.0-flash` via OpenAI-compat endpoint |
+| **ML Models** | ✅ Trained | `distilroberta-feedback-model` + `distilroberta-policy-model` |
+| **GitHub** | ✅ Pushed | https://github.com/Kshitij-2608/feedbackai |
+
+---
+
+## 🚧 Recent Fixes (2026-04-20)
+
+| Fix | Details |
+|---|---|
+| **Vite build on Vercel** | Added `--include=dev` to frontend `npm install` in vercel-build script |
+| **500 on login/signup** | `api/index.js` switched from dynamic URL import to static import; added `dotenv.config()` first |
+| **React error #31** | `getApiErrorMessage` hardened to always return a string, not a Prisma `{code,message}` object |
+| **Prisma binary mismatch** | Added `binaryTargets = ["native", "debian-openssl-3.0.x"]` to schema.prisma so Vercel (Linux) gets the right engine |
+| **Error middleware** | Added Prisma error code mapping (P2002, P1001, P1008) with user-friendly messages |
 
 ---
 
 ## Completed Work
 
-### Phase 1 — ML Intelligence Layer
-| Item | Status |
+### Phase 1 — ML Intelligence Layer ✅
+| Item | Result |
 |---|---|
-| Feedback classification dataset (120 examples) | ✅ Done |
-| Conversation policy dataset (60 examples) | ✅ Done |
-| Multi-task feedback model trained (distilroberta-base, 5 epochs) | ✅ Done |
-| Policy model trained (distilroberta-base, 8 epochs) | ✅ Done |
-| FastAPI inference server (`ml/serve/inference_server.py`) | ✅ Done |
-| Model loader with lazy singleton (`ml/serve/model_loader.py`) | ✅ Done |
+| Feedback classification dataset | 140 examples (120 original + 20 new edge cases) |
+| Conversation policy dataset | 105 examples (60 original + 45 new edge cases) |
+| New edge cases added | Evasion, topic change, hostility, confusion, minimal responses, off-topic redirects |
+| Feedback model trained | DistilRoBERTa, 10 epochs: quality 92.8%, topic 92.8%, continue 85.7% |
+| Policy model trained | DistilRoBERTa, 12 epochs: loss 2.35 → 0.65 |
+| FastAPI inference server | `ml/serve/inference_server.py` on port 8001 |
+| ML → API fallback | Automatic when inference server unreachable |
 
-### Phase 2 — Backend
+### Phase 2 — Backend ✅
 | Item | Status |
 |---|---|
-| Neon PostgreSQL database connected | ✅ Done |
-| Prisma migrations applied to Neon | ✅ Done |
-| Admin user seeded (`admin@feedbackai.dev` / `Admin123!`) | ✅ Done |
-| `ml` provider mode in `llm.provider.js` | ✅ Done |
-| Gemini API wired via OpenAI-compatible endpoint | ✅ Done |
-| Graceful fallback: ML → Gemini API | ✅ Done |
-| CORS updated for Vercel domains | ✅ Done |
-| DB retry + startup warmup for Neon cold starts | ✅ Done |
+| Neon PostgreSQL provisioned | ✅ `ep-broad-bonus-aoe0ezun-pooler` (Singapore) |
+| Prisma migrations applied | ✅ `20260419121029_init` |
+| Admin user seeded | ✅ `admin@feedbackai.dev` |
+| Gemini API integration | ✅ `gemini-2.0-flash` via OpenAI-compat endpoint |
+| ML/API/mock provider modes | ✅ Switchable via `LLM_PROVIDER_MODE` env var |
+| CORS for Vercel domains | ✅ Regex allows `*.vercel.app` |
+| DB startup warmup | ✅ `prisma.$connect()` on server start |
+| Error middleware hardened | ✅ Prisma codes → friendly messages, always string |
 
-### Phase 3 — Frontend
+### Phase 3 — Frontend ✅
 | Item | Status |
 |---|---|
-| Role-aware login redirect (admin→dashboard, user→upload) | ✅ Done |
-| Rich empty-state in Dashboard | ✅ Done |
-| Relative `/api` base URL for Vercel compatibility | ✅ Done |
-| `frontend/.env.local` for local dev | ✅ Done |
+| Login / Signup flows | ✅ Role-aware redirect (ADMIN→dashboard, USER→upload) |
+| Admin Dashboard | ✅ Sessions, submissions, admin notes |
+| Interview page | ✅ Real-time chat with AI interviewer |
+| Summary page | ✅ Post-session analysis |
+| Relative `/api` base URL | ✅ Works on both localhost and Vercel |
+| Error handling hardened | ✅ `getApiErrorMessage` always returns string |
 
-### Phase 4 — Deployment Prep
+### Phase 4 — Deployment ✅
 | Item | Status |
 |---|---|
-| `vercel.json` configured (build + rewrites) | ✅ Done |
-| `api/index.js` Vercel serverless handler | ✅ Done |
-| Root `package.json` for Vercel dep resolution | ✅ Done |
-| `.gitignore` updated (artifacts, venv, uploads) | ✅ Done |
+| `vercel.json` configured | ✅ Build + rewrites + function config |
+| `api/index.js` serverless handler | ✅ Static imports, dotenv first |
+| Prisma Linux binary target | ✅ `debian-openssl-3.0.x` |
+| `.gitignore` clean | ✅ No secrets, no artifacts, no venv |
+| `.env.example` files | ✅ Both backend and frontend |
+| `CREDENTIALS.md` | ✅ All service info documented |
+| GitHub pushed | ✅ 94 files, 3 commits |
 
 ---
 
 ## Architecture
 
 ```
-Vercel (same domain)
-├── frontend/dist/          ← Static Vite build (served by Vercel CDN)
-└── api/index.js            ← Serverless Express handler (all /api/* routes)
+Vercel (feedbackai.vercel.app)
+├── CDN → frontend/dist/        ← Vite + React build
+└── Serverless → api/index.js   ← Express wrapped for Vercel
          │
-         ├── Neon PostgreSQL (cloud, free tier)
-         ├── Gemini API (LLM_PROVIDER_MODE=api, via OpenAI compat endpoint)
-         └── ML Inference Server (optional, local only / self-hosted)
+         ├── Neon PostgreSQL (cloud, Singapore, free tier)
+         ├── Gemini 2.0 Flash (LLM_PROVIDER_MODE=api) ← production
+         └── ML Inference Server (optional, local only)
+                  ├── distilroberta-feedback-model (quality/topic/sentiment)
+                  └── distilroberta-policy-model (conversation policy)
 ```
-
-The ML inference server (FastAPI/Python) is **local/self-hosted only** — it cannot run on Vercel. When `LLM_PROVIDER_MODE=ml` but the server is unreachable, the backend gracefully falls back to Gemini API mode.
 
 ---
 
@@ -73,101 +98,47 @@ The ML inference server (FastAPI/Python) is **local/self-hosted only** — it ca
 ### Backend
 ```powershell
 cd backend
-# First time only:
 npm install
 npx prisma generate
-
-# Every time:
-npm run dev
+npm run dev          # http://localhost:4000
 ```
 
 ### Frontend
 ```powershell
 cd frontend
-# First time only:
 npm install
-
-# Every time:
-npm run dev
-# Opens http://localhost:5173
+npm run dev          # http://localhost:5173 (auto-proxies to :4000)
 ```
 
-### ML Inference Server (optional)
+### ML Server (optional)
 ```powershell
 cd ml
-# First time only: create venv with Python 3.12
-py -3.12 -m venv .venv312
-.venv312\Scripts\pip install -r requirements.txt
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-# Train models (first time):
-.venv312\Scripts\python training\train_multitask.py \
-  --train-file data/processed/feedback_turns/train.jsonl \
-  --val-file data/processed/feedback_turns/val.jsonl \
-  --output-dir artifacts/distilroberta-feedback-model
-
-.venv312\Scripts\python training\train_policy_model.py \
-  --train-file data/processed/policy/train.jsonl \
-  --val-file data/processed/policy/val.jsonl \
-  --output-dir artifacts/distilroberta-policy-model
-
-# Start server:
 .venv312\Scripts\python -m uvicorn serve.inference_server:app --host 0.0.0.0 --port 8001
+# Then set LLM_PROVIDER_MODE=ml in backend/.env
 ```
-
-Then set `LLM_PROVIDER_MODE=ml` in `backend/.env` and restart the backend.
 
 ---
 
-## Deploying to Vercel
-
-### 1. Push to GitHub
-```bash
-git init   # if not already
-git add .
-git commit -m "Initial FeedbackAI deployment"
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-git push -u origin main
-```
-
-### 2. Import to Vercel
-1. Go to [vercel.com](https://vercel.com) → New Project → Import Git Repo
-2. Select your repo
-3. Vercel auto-detects `vercel.json` — no framework needed
-4. **Add Environment Variables** (Settings → Environment Variables):
+## Vercel Environment Variables Required
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `postgresql://neondb_owner:...@ep-...neon.tech:5432/neondb?sslmode=require&connect_timeout=20` |
+| `DATABASE_URL` | Neon pooler connection string |
 | `DIRECT_URL` | Same as DATABASE_URL |
 | `JWT_SECRET` | Strong random string |
 | `LLM_PROVIDER_MODE` | `api` |
 | `LLM_API_URL` | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
-| `LLM_API_KEY` | Your Gemini API key |
+| `LLM_API_KEY` | Gemini API key |
 | `LLM_MODEL` | `gemini-2.0-flash` |
-| `CLIENT_URL` | `https://your-project.vercel.app` |
 | `NODE_ENV` | `production` |
-
-5. Deploy!
-
-### 3. After Deploy
-Run Prisma migration against Neon (one-time):
-```bash
-cd backend
-npx prisma migrate deploy
-npm run seed
-```
-
----
-
-## Credentials (Local & Neon Dev)
-- Admin: `admin@feedbackai.dev` / `Admin123!`
-- Neon DB: `ep-broad-bonus-aoe0ezun-pooler.c-2.ap-southeast-1.aws.neon.tech`
+| `CLIENT_URL` | `https://feedbackai.vercel.app` |
 
 ---
 
 ## Open Items
-- [ ] Register a custom domain on Vercel (optional)
+
+- [ ] Verify login/signup work on production after latest push (Prisma binary fix)
+- [ ] Set `CLIENT_URL` in Vercel after confirming final deployment URL
 - [ ] Upload file storage → replace local `uploads/` with Vercel Blob or Cloudinary
-- [ ] Rate limiting (express-rate-limit) for production hardening
-- [ ] Set up Neon DB branching for staging vs. production
+- [ ] Rate limiting (`express-rate-limit`) for production hardening
+- [ ] Host ML inference server separately (Render/Railway) for `LLM_PROVIDER_MODE=ml` on prod
