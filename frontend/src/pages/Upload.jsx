@@ -173,10 +173,8 @@ export default function Upload() {
           <option value="code">Code / Script</option>
         </select>
       </div>
-
-        </div>
         
-        <div className="flex-1 min-w-[200px]">
+      <div className="flex-1 min-w-[200px]">
           <label htmlFor="submission-title" className="text-xs font-label font-medium text-on-surface-variant uppercase tracking-[0.08em] block mb-2">
             Session Title (Optional)
           </label>
