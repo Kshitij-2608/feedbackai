@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="avatar">AI</div>
+                <div>
+                    <h1>Feedback collector</h1>
+                    <p class="status">online</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <label for="image-upload" class="header-action-btn upload-btn-action"
+                    title="Upload an Image to discuss">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Upload Image</span>
+                </label>
+                <input type="file" id="image-upload" accept="image/*" class="hidden-input">
+                <a href="/api/export/csv" class="header-action-btn export-btn" download>Export Data</a>
+            </div>
+        </header>
+
+        <div class="preview-container hidden" id="preview-container">
+            <div class="preview-content">
+                <img id="image-preview" src="" alt="Preview">
+                <span class="preview-text">Image attached</span>
+                <button id="remove-image-btn" aria-label="Remove image">&times;</button>
+            </div>
+        </div>
+
+
+        <main class="chat-container" id="chat-container">
+            <!-- Messages will appear here -->
+        </main>
+
+        <div class="typing-indicator hidden" id="typing-indicator">
+            <span></span><span></span><span></span>
+        </div>
+
+        <footer class="app-footer">
+            <form id="chat-form" class="chat-form">
+                <input type="text" id="user-input" placeholder="Type your response..." autocomplete="off">
+                <button type="submit" id="send-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+    <script src="/static/script.js?v=2"></script>
+</body>
+
+</html>
