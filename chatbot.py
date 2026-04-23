@@ -1,7 +1,7 @@
 from typing import Dict, List
 import datetime
 import threading
-from llm import generate_heurisense_response, extract_session_data
+from llm import generate_heurisense_response, extract_session_data, generate_opening_message
 
 class ConversationLog:
     def __init__(self, role: str, message: str):
@@ -64,7 +64,7 @@ def process_message(session_id: str, message: str, image_base64: str = None) -> 
 
     # Give initial greeting if brand new empty logs
     if len(db_session.logs) == 0 and not message:
-        initial_msg = "Hi, I'm your AI feedback assistant. I’ll be collecting your feedback on the image generation feature to help improve its quality and reliability. This session may be recorded for evaluation purposes. Would you like to continue?"
+        initial_msg = generate_opening_message(image_base64)
         log_message(db_session, "AI", initial_msg)
         return initial_msg
 
