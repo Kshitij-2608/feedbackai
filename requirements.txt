@@ -1,5 +1,9 @@
-fastapi==0.109.2
-uvicorn==0.27.1
-pydantic==2.6.1
-google-generativeai==0.4.0
-python-dotenv==1.0.1
+fastapi
+uvicorn
+google-genai
+python-dotenv
+psycopg2-binary
+bcrypt
+python-jose[cryptography]
+python-multipart
+pydantic

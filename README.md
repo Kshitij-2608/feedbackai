@@ -20,7 +20,7 @@ graph TD
     D -->|Calls via SDK| E(Google Gemini API)
     E -->|Returns Conversational/JSON data| D
     D -->|Returns Response| C
-    C -->|Stores State & Logs| F[(In-Memory Session / SQLite DB)]
+    C -->|Stores State & Logs| F[(PostgreSQL / Neon DB)]
     C -->|On End Session| H[Background Extraction Thread]
     H --> D
 ```
@@ -34,7 +34,8 @@ graph TD
 - **`chatbot.py`**: The core conversational state manager. Maintains conversation histories (`ConversationLog`) under different `FeedbackSession` instances. It detects when conversations end, and triggers background data extraction routines to convert raw logs to structured fields.
 - **`llm.py`**: The integration layer holding interactions with the Gemini API. Implements distinct prompts tailored for responsive conversation generation and post-session structured JSON extraction.
 - **`models.py`**: Pydantic models for ensuring strict type validation of inputs and outputs in FastAPI routes.
-- **`feedback.db`**: SQLite database instance capturing historical logs on disk.
+- **`db.py`**: Manages the connection to the PostgreSQL database (e.g., Neon) for persisting user accounts and chat sessions.
+- **`auth.py`**: Handles user authentication, including JWT token generation and robust password hashing using bcrypt.
 
 ---
 
@@ -42,6 +43,7 @@ graph TD
 
 - Python 3.9+
 - A Google Gemini API Key
+- A PostgreSQL database (e.g., Neon)
 
 ## Setup & Installation
 
@@ -59,16 +61,16 @@ graph TD
    source venv/bin/activate
    ```
 
-3. **Install Dependencies:**
-   Ensure you have the necessary libraries installed. If a requirements file isn't present, install the core components manually:
+   Ensure you have the necessary libraries installed using the provided requirements file:
    ```bash
-   pip install fastapi uvicorn pydantic google-genai python-dotenv
+   pip install -r requirements.txt
    ```
 
-4. **Environment Variables:**
-   Create a `.env` file in the root folder containing your Gemini API key:
+   Create a `.env` file in the root folder containing your required keys:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
+   DATABASE_URL=your_postgresql_database_url_here
+   JWT_SECRET=your_super_secret_jwt_key
    ```
 
 ## Running the Application
