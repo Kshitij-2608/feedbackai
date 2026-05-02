@@ -110,6 +110,75 @@ function handleSignOut() {
   switchTab('signin');
 }
 
+function toggleEditAccount() {
+  const viewMode = document.getElementById('account-view-mode');
+  const editMode = document.getElementById('account-edit-mode');
+  const isEditing = !editMode.classList.contains('hidden');
+  
+  if (!isEditing) {
+    // Populate form with current data
+    document.getElementById('edit-name').value = currentUser.name;
+    document.getElementById('edit-email').value = currentUser.email;
+    document.getElementById('edit-password').value = '';
+    document.getElementById('edit-error').classList.add('hidden');
+  }
+  
+  viewMode.classList.toggle('hidden');
+  editMode.classList.toggle('hidden');
+}
+
+async function handleUpdateAccount(e) {
+  e.preventDefault();
+  const name = document.getElementById('edit-name').value.trim();
+  const email = document.getElementById('edit-email').value.trim();
+  const password = document.getElementById('edit-password').value;
+  const errorEl = document.getElementById('edit-error');
+  const btn = document.getElementById('edit-save-btn');
+  
+  errorEl.classList.add('hidden');
+  
+  if (!name || !email) {
+    errorEl.textContent = 'Name and email are required.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  
+  const body = { name, email };
+  if (password) {
+    if (password.length < 6) {
+      errorEl.textContent = 'Password must be at least 6 characters.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    body.password = password;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  
+  try {
+    const data = await apiFetch('/api/auth/me', { method: 'PUT', body: JSON.stringify(body) });
+    saveUser(data);
+    
+    // Update UI elements across the app
+    document.getElementById('user-name-nav').textContent = data.name;
+    const initial = data.name.charAt(0).toUpperCase();
+    document.getElementById('user-avatar-nav').textContent = initial;
+    document.getElementById('account-avatar').textContent = initial;
+    document.getElementById('account-name').textContent = data.name;
+    document.getElementById('account-email').textContent = data.email;
+    
+    toggleEditAccount();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+}
+
+
 /* ── App Entry ────────────────────────────────────────────────────────────── */
 function enterApp() {
   document.getElementById('auth-overlay').classList.add('hidden');

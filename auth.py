@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import bcrypt
 from jose import JWTError, jwt
-from models import UserCreate, UserLogin, TokenResponse, UserInfo
+from models import UserCreate, UserLogin, TokenResponse, UserInfo, UserUpdate
 import db
 
 JWT_SECRET = os.getenv("JWT_SECRET", "heurisense_default_secret")
@@ -125,5 +125,56 @@ async def me(current_user: dict = Depends(get_current_user)):
                 email=user["email"],
                 created_at=str(user["created_at"]),
             )
+    finally:
+        conn.close()
+
+
+@router.put("/me", response_model=TokenResponse)
+async def update_me(data: UserUpdate, current_user: dict = Depends(get_current_user)):
+    conn = db.get_connection()
+    try:
+        with conn.cursor() as cur:
+            # Check if email is being updated and if it's already taken
+            if data.email and data.email != current_user["email"]:
+                cur.execute("SELECT id FROM users WHERE email = %s", (data.email,))
+                if cur.fetchone():
+                    raise HTTPException(status_code=400, detail="Email already registered")
+            
+            update_fields = []
+            update_values = []
+            
+            if data.name:
+                update_fields.append("name = %s")
+                update_values.append(data.name)
+            if data.email:
+                update_fields.append("email = %s")
+                update_values.append(data.email)
+            if data.password:
+                hashed = hash_password(data.password)
+                update_fields.append("password_hash = %s")
+                update_values.append(hashed)
+                
+            if not update_fields:
+                # Nothing to update, just return current token/info
+                cur.execute("SELECT name, email FROM users WHERE id = %s", (current_user["user_id"],))
+                user = cur.fetchone()
+                token = create_token(current_user["user_id"], user["email"])
+                return TokenResponse(token=token, name=user["name"], email=user["email"], user_id=current_user["user_id"])
+                
+            query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s RETURNING name, email"
+            update_values.append(current_user["user_id"])
+            
+            cur.execute(query, tuple(update_values))
+            updated_user = cur.fetchone()
+            conn.commit()
+            
+            # Generate new token in case email changed
+            token = create_token(current_user["user_id"], updated_user["email"])
+            return TokenResponse(token=token, name=updated_user["name"], email=updated_user["email"], user_id=current_user["user_id"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
     finally:
         conn.close()

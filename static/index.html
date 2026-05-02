@@ -257,15 +257,39 @@
           <h1>Account</h1>
           <p class="section-subtitle">Your profile information</p>
         </div>
-        <div class="account-card">
+        <div class="account-card" id="account-view-mode">
           <div class="account-avatar" id="account-avatar">S</div>
           <div class="account-info">
             <h2 id="account-name">–</h2>
             <p id="account-email" class="muted">–</p>
             <p id="account-joined" class="muted small">Joined –</p>
           </div>
+          <button class="btn-outline" style="margin-left: auto;" onclick="toggleEditAccount()">Edit Profile</button>
         </div>
-        <button class="btn-danger" onclick="handleSignOut()">Sign Out</button>
+
+        <form id="account-edit-mode" class="account-card hidden" onsubmit="handleUpdateAccount(event)">
+          <div class="account-info" style="width: 100%;">
+            <div class="form-group">
+              <label for="edit-name">Full Name</label>
+              <input id="edit-name" type="text" required />
+            </div>
+            <div class="form-group">
+              <label for="edit-email">Email</label>
+              <input id="edit-email" type="email" required />
+            </div>
+            <div class="form-group">
+              <label for="edit-password">New Password</label>
+              <input id="edit-password" type="password" placeholder="Leave blank to keep current password" />
+            </div>
+            <div id="edit-error" class="auth-error hidden"></div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+              <button type="submit" class="btn-primary" id="edit-save-btn">Save Changes</button>
+              <button type="button" class="btn-outline" onclick="toggleEditAccount()">Cancel</button>
+            </div>
+          </div>
+        </form>
+
+        <button class="btn-danger" onclick="handleSignOut()" style="margin-top: 20px;">Sign Out</button>
       </div>
     </section>
 
