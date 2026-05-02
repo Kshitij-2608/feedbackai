@@ -13,10 +13,11 @@ class ConversationLog:
 
 
 class FeedbackSession:
-    def __init__(self, session_id: str, user_id: Optional[int] = None):
+    def __init__(self, session_id: str, user_id: Optional[int] = None, content_type: str = "image"):
         self.session_id = session_id
         self.user_id = user_id
         self.state = "ACTIVE"
+        self.content_type = content_type
         self.overall_rating = None
         self.summary_json = None
         self.logs: List[ConversationLog] = []
@@ -27,10 +28,10 @@ class FeedbackSession:
             conn = db.get_connection()
             with conn.cursor() as cur:
                 cur.execute(
-                    """INSERT INTO sessions (session_id, user_id, state)
-                       VALUES (%s, %s, 'ACTIVE')
+                    """INSERT INTO sessions (session_id, user_id, state, content_type)
+                       VALUES (%s, %s, 'ACTIVE', %s)
                        ON CONFLICT (session_id) DO NOTHING""",
-                    (self.session_id, self.user_id),
+                    (self.session_id, self.user_id, self.content_type),
                 )
                 conn.commit()
         except Exception as e:
@@ -42,9 +43,9 @@ class FeedbackSession:
 SESSIONS: Dict[str, FeedbackSession] = {}
 
 
-def get_or_create_session(session_id: str, user_id: Optional[int] = None) -> FeedbackSession:
+def get_or_create_session(session_id: str, user_id: Optional[int] = None, content_type: str = "image") -> FeedbackSession:
     if session_id not in SESSIONS:
-        SESSIONS[session_id] = FeedbackSession(session_id, user_id)
+        SESSIONS[session_id] = FeedbackSession(session_id, user_id, content_type)
     return SESSIONS[session_id]
 
 
@@ -96,8 +97,9 @@ def process_message(
     message: str,
     image_base64: str = None,
     user_id: int = None,
+    content_type: str = "image",
 ) -> str:
-    db_session = get_or_create_session(session_id, user_id)
+    db_session = get_or_create_session(session_id, user_id, content_type)
 
     if db_session.state == "END":
         return "Your feedback has already been successfully recorded. Thank you!"

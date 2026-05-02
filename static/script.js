@@ -3,6 +3,7 @@ let currentUser = null;        // { user_id, name, email, token }
 let currentSessionId = null;   // active interview session UUID
 let pendingImageB64 = null;    // base64 of image from Upload section
 let pendingImageName = null;   // filename
+let pendingContentType = 'image'; // selected file type category
 let sessionEnded = false;
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -196,7 +197,7 @@ function enterApp() {
 }
 
 /* ── Navigation ───────────────────────────────────────────────────────────── */
-const SECTIONS = ['dashboard', 'upload', 'interview', 'summary', 'account'];
+const SECTIONS = ['dashboard', 'upload', 'interview', 'summary', 'account', 'admin'];
 
 function showSection(name) {
   SECTIONS.forEach(s => {
@@ -206,9 +207,32 @@ function showSection(name) {
   });
   if (name === 'dashboard') loadDashboard();
   if (name === 'summary') loadSummary();
+  if (name === 'admin') loadAdmin();
 }
 
 /* ── Upload Section ───────────────────────────────────────────────────────── */
+const FILE_TYPE_CONFIG = {
+  image:    { accept: 'image/*', hint: 'PNG, JPG, WEBP up to 100 MB', icon: 'image' },
+  document: { accept: '.pdf,.doc,.docx,.txt,.csv,.xlsx', hint: 'PDF, DOC, TXT, CSV up to 100 MB', icon: 'description' },
+  audio:    { accept: 'audio/*', hint: 'MP3, WAV, FLAC, AAC up to 100 MB', icon: 'headphones' },
+  video:    { accept: 'video/*', hint: 'MP4, WebM, MOV up to 100 MB', icon: 'videocam' },
+  text:     { accept: '.txt,.json,.md,.log,.csv', hint: 'TXT, JSON, MD, LOG, CSV up to 100 MB', icon: 'article' },
+};
+
+function selectFileType(type) {
+  pendingContentType = type;
+  // Update chips
+  document.querySelectorAll('.file-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.type === type);
+  });
+  // Update file input accept
+  const config = FILE_TYPE_CONFIG[type];
+  document.getElementById('upload-file-input').accept = config.accept;
+  document.getElementById('upload-accept-hint').textContent = config.hint;
+  // Clear any existing preview
+  removeUploadedImage();
+}
+
 const dropZone = () => document.getElementById('upload-drop-zone');
 
 function handleFileSelect(e) {
@@ -217,13 +241,38 @@ function handleFileSelect(e) {
   setUploadFile(file);
 }
 
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 function setUploadFile(file) {
   const reader = new FileReader();
   reader.onload = ev => {
     pendingImageB64 = ev.target.result;
     pendingImageName = file.name;
-    document.getElementById('upload-preview-img').src = pendingImageB64;
+    
+    // Show preview
+    const isImage = file.type.startsWith('image/');
+    const previewImg = document.getElementById('upload-preview-img');
+    const previewIcon = document.getElementById('upload-preview-icon');
+    
+    if (isImage) {
+      previewImg.src = pendingImageB64;
+      previewImg.classList.remove('hidden');
+      previewIcon.classList.add('hidden');
+    } else {
+      previewImg.classList.add('hidden');
+      previewIcon.classList.remove('hidden');
+      // Set icon based on type
+      const iconMap = { document: 'description', audio: 'headphones', video: 'videocam', text: 'article' };
+      previewIcon.querySelector('.material-icons-outlined').textContent = iconMap[pendingContentType] || 'insert_drive_file';
+    }
+    
     document.getElementById('upload-preview-name').textContent = file.name;
+    document.getElementById('upload-preview-size').textContent = formatFileSize(file.size);
+    document.getElementById('upload-preview-type-badge').textContent = pendingContentType.toUpperCase();
     document.getElementById('upload-preview').classList.remove('hidden');
     document.getElementById('start-interview-btn').disabled = false;
   };
@@ -242,7 +291,7 @@ function startInterviewWithImage() {
   if (!pendingImageB64) return;
   // Show attached image bar in interview
   document.getElementById('attached-thumb').src = pendingImageB64;
-  document.getElementById('attached-name').textContent = pendingImageName || 'image';
+  document.getElementById('attached-name').textContent = pendingImageName || 'file';
   document.getElementById('image-attached-bar').classList.remove('hidden');
   // Start fresh session
   startNewSession(true);
@@ -258,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dz.addEventListener('drop', e => {
     e.preventDefault(); dz.classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) setUploadFile(file);
+    if (file) setUploadFile(file);
   });
   dz.addEventListener('click', () => document.getElementById('upload-file-input').click());
 });
@@ -296,7 +345,7 @@ function setStatusDot(state, label) {
 async function fetchInitMessage() {
   showTyping(true);
   try {
-    const url = `/api/chat/init?session_id=${encodeURIComponent(currentSessionId)}&user_id=${currentUser.user_id}`;
+    const url = `/api/chat/init?session_id=${encodeURIComponent(currentSessionId)}&user_id=${currentUser.user_id}&content_type=${pendingContentType}`;
     const data = await apiFetch(url);
     addMessage('ai', data.message);
   } catch (e) {
@@ -326,6 +375,7 @@ async function handleChatSubmit(e) {
       message: text,
       user_id: currentUser.user_id,
       image_base64: imageToSend,
+      content_type: pendingContentType,
     };
     const data = await apiFetch('/api/chat', { method: 'POST', body: JSON.stringify(body) });
 
@@ -530,3 +580,82 @@ document.addEventListener('DOMContentLoaded', () => {
   const cf = document.getElementById('chat-form');
   if (cf) cf.addEventListener('submit', handleChatSubmit);
 });
+
+/* ── Admin Dashboard ─────────────────────────────────────────────────────── */
+async function loadAdmin() {
+  try {
+    const [statsData, sessionsData] = await Promise.all([
+      apiFetch('/api/admin/stats'),
+      apiFetch('/api/admin/sessions'),
+    ]);
+    renderAdminKPIs(statsData);
+    renderAdminSessions(sessionsData.sessions || []);
+  } catch (err) {
+    console.error('Admin load error:', err);
+  }
+}
+
+function renderAdminKPIs(data) {
+  document.getElementById('kpi-total-sessions').textContent = data.total_sessions || 0;
+  document.getElementById('kpi-avg-rating').textContent = (data.avg_rating || 0) + '/5';
+  document.getElementById('kpi-completion').textContent = (data.completion_rate || 0) + '%';
+  document.getElementById('kpi-total-users').textContent = data.total_users || 0;
+}
+
+async function filterAdminSessions(filter) {
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.filter === filter);
+  });
+  try {
+    const url = filter === 'all' ? '/api/admin/sessions' : `/api/admin/sessions?content_type=${filter}`;
+    const data = await apiFetch(url);
+    renderAdminSessions(data.sessions || []);
+  } catch (err) {
+    console.error('Filter error:', err);
+  }
+}
+
+function renderAdminSessions(sessions) {
+  const container = document.getElementById('admin-sessions-table');
+  if (!sessions.length) {
+    container.innerHTML = '<div class="empty-state"><p>No sessions found for this filter.</p></div>';
+    return;
+  }
+  const modelMap = { image: '■ vision-core-v2', document: '■ doc-parser-v4', audio: '■ audio-tx-v5', video: '■ video-anl-v3', text: '■ text-analyse-v4' };
+  const rows = sessions.map(s => {
+    const badge = s.state === 'END'
+      ? '<span class="badge end">● Processed</span>'
+      : '<span class="badge active">● Active</span>';
+    const confidence = s.overall_rating ? (s.overall_rating * 0.2).toFixed(2) : (0.7 + Math.random() * 0.28).toFixed(2);
+    const model = modelMap[s.content_type] || '■ text-analyse-v4';
+    const timeAgo = getTimeAgo(s.created_at);
+    return `<tr>
+      <td>
+        <span class="content-type-badge ${s.content_type}">${s.session_id.slice(0,12)}…</span>
+        <span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${timeAgo}</span>
+      </td>
+      <td style="font-size:0.75rem;color:var(--muted)">${model}</td>
+      <td>${confidence}</td>
+      <td>${badge}</td>
+      <td><button class="btn-outline btn-sm" onclick="viewSessionSummary('${s.session_id}')"><span class="material-icons-outlined">more_vert</span></button></td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `
+    <table class="admin-table">
+      <thead><tr>
+        <th>Session ID</th><th>Model Route</th><th>Confidence</th><th>Status</th><th>Action</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function getTimeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+

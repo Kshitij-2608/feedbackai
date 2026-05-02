@@ -8,6 +8,7 @@ class ChatRequest(BaseModel):
     message: str
     image_base64: Optional[str] = None
     user_id: Optional[int] = None
+    content_type: Optional[str] = None  # image, document, audio, video, text
 
 
 class ChatResponse(BaseModel):

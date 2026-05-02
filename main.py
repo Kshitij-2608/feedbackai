@@ -40,15 +40,15 @@ async def read_index():
 
 
 @app.get("/api/chat/init")
-async def init_chat(session_id: str, user_id: int = None):
-    db_session = get_or_create_session(session_id, user_id)
+async def init_chat(session_id: str, user_id: int = None, content_type: str = "image"):
+    db_session = get_or_create_session(session_id, user_id, content_type)
     if db_session.state == "END":
         return ChatResponse(
             session_id=session_id,
             message="This session is now complete. Thank you for your time.",
         )
     if len(db_session.logs) == 0:
-        response_text = process_message(session_id, "", None, user_id)
+        response_text = process_message(session_id, "", None, user_id, content_type)
         return ChatResponse(session_id=session_id, message=response_text)
     return ChatResponse(session_id=session_id, message="Hi again, let's continue.")
 
@@ -60,6 +60,7 @@ async def chat(request: ChatRequest):
         request.message,
         request.image_base64,
         request.user_id,
+        request.content_type or "image",
     )
     return ChatResponse(session_id=request.session_id, message=response_text)
 
@@ -124,6 +125,97 @@ async def get_dashboard(current_user: dict = Depends(auth.get_current_user)):
                     "session_id": r["session_id"],
                     "state": r["state"],
                     "overall_rating": r["overall_rating"],
+                    "created_at": str(r["created_at"]),
+                    "completed_at": str(r["completed_at"]) if r["completed_at"] else None,
+                })
+            return {"sessions": sessions}
+    finally:
+        conn.close()
+
+
+@app.get("/api/admin/stats")
+async def admin_stats(current_user: dict = Depends(auth.get_current_user)):
+    """Return aggregated stats for the admin dashboard."""
+    conn = db.get_connection()
+    try:
+        with conn.cursor() as cur:
+            # Overall stats
+            cur.execute("SELECT COUNT(*) as total FROM sessions")
+            total_sessions = cur.fetchone()["total"]
+
+            cur.execute("SELECT AVG(overall_rating) as avg_rating FROM sessions WHERE overall_rating IS NOT NULL")
+            avg_rating = cur.fetchone()["avg_rating"]
+            avg_rating = round(float(avg_rating), 1) if avg_rating else 0
+
+            cur.execute("SELECT COUNT(*) as completed FROM sessions WHERE state = 'END'")
+            completed = cur.fetchone()["completed"]
+            completion_rate = round((completed / total_sessions * 100), 1) if total_sessions > 0 else 0
+
+            cur.execute("SELECT COUNT(DISTINCT user_id) as total_users FROM sessions WHERE user_id IS NOT NULL")
+            total_users = cur.fetchone()["total_users"]
+
+            # Stats by content type
+            cur.execute("""
+                SELECT COALESCE(content_type, 'image') as content_type,
+                       COUNT(*) as count,
+                       AVG(overall_rating) as avg_rating,
+                       COUNT(CASE WHEN state = 'END' THEN 1 END) as completed
+                FROM sessions
+                GROUP BY COALESCE(content_type, 'image')
+            """)
+            by_type = []
+            for row in cur.fetchall():
+                by_type.append({
+                    "content_type": row["content_type"],
+                    "count": row["count"],
+                    "avg_rating": round(float(row["avg_rating"]), 1) if row["avg_rating"] else 0,
+                    "completed": row["completed"],
+                })
+
+            return {
+                "total_sessions": total_sessions,
+                "avg_rating": avg_rating,
+                "completion_rate": completion_rate,
+                "total_users": total_users,
+                "by_content_type": by_type,
+            }
+    finally:
+        conn.close()
+
+
+@app.get("/api/admin/sessions")
+async def admin_sessions(content_type: str = None, current_user: dict = Depends(auth.get_current_user)):
+    """Return all sessions, optionally filtered by content type."""
+    conn = db.get_connection()
+    try:
+        with conn.cursor() as cur:
+            if content_type and content_type != "all":
+                cur.execute(
+                    """SELECT s.session_id, s.state, s.overall_rating, s.content_type,
+                              s.created_at, s.completed_at, u.name as user_name
+                       FROM sessions s
+                       LEFT JOIN users u ON s.user_id = u.id
+                       WHERE COALESCE(s.content_type, 'image') = %s
+                       ORDER BY s.created_at DESC""",
+                    (content_type,),
+                )
+            else:
+                cur.execute(
+                    """SELECT s.session_id, s.state, s.overall_rating, s.content_type,
+                              s.created_at, s.completed_at, u.name as user_name
+                       FROM sessions s
+                       LEFT JOIN users u ON s.user_id = u.id
+                       ORDER BY s.created_at DESC"""
+                )
+            rows = cur.fetchall()
+            sessions = []
+            for r in rows:
+                sessions.append({
+                    "session_id": r["session_id"],
+                    "state": r["state"],
+                    "overall_rating": r["overall_rating"],
+                    "content_type": r["content_type"] or "image",
+                    "user_name": r["user_name"] or "Anonymous",
                     "created_at": str(r["created_at"]),
                     "completed_at": str(r["completed_at"]) if r["completed_at"] else None,
                 })

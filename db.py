@@ -33,6 +33,7 @@ def init_db():
                     session_id VARCHAR(100) UNIQUE NOT NULL,
                     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
                     state VARCHAR(20) DEFAULT 'ACTIVE',
+                    content_type VARCHAR(20) DEFAULT 'image',
                     overall_rating INTEGER,
                     summary_json TEXT,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -49,6 +50,15 @@ def init_db():
                 )
             """)
             conn.commit()
+            # Migration: add content_type column if missing
+            try:
+                cur.execute("""
+                    ALTER TABLE sessions ADD COLUMN IF NOT EXISTS
+                    content_type VARCHAR(20) DEFAULT 'image'
+                """)
+                conn.commit()
+            except Exception:
+                conn.rollback()
             print("Database tables initialized successfully.")
     except Exception as e:
         print(f"Database initialization error: {e}")

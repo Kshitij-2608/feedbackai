@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HeuriSense – AI Feedback Platform</title>
+  <title>FeedbackAI – AI Feedback Platform</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
   <meta name="description" content="A structured conversational evaluation system that collects rich quality feedback on AI model outputs." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -110,6 +111,10 @@
             <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
             Summary
           </a>
+          <a href="#" id="nav-admin" class="nav-link" role="menuitem" onclick="showSection('admin')">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+            Admin
+          </a>
           <a href="#" id="nav-account" class="nav-link" role="menuitem" onclick="showSection('account')">
             <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
             Account
@@ -145,37 +150,92 @@
 
     <!-- ── SECTION: UPLOAD ───────────────────── -->
     <section id="section-upload" class="section hidden">
-      <div class="section-container narrow">
-        <div class="section-header">
-          <h1>Submit a Model Output</h1>
-          <p class="section-subtitle">Upload an image from your AI model to begin a structured feedback interview</p>
+      <div class="section-container">
+        <div class="upload-hero">
+          <div class="upload-hero-glow"></div>
+          <h1 class="upload-title">Upload Your AI Content</h1>
+          <p class="upload-subtitle">Get conversational feedback powered by AI — no forms, just natural dialogue.</p>
         </div>
 
-        <div class="upload-card" id="upload-drop-zone">
-          <div class="upload-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="rgba(124,106,247,0.1)"/>
-              <path d="M24 14v14M17 21l7-7 7 7" stroke="#7c6af7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M14 34h20" stroke="#7c6af7" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
+        <div class="upload-content-grid">
+          <!-- Unified Upload Card -->
+          <div class="upload-card-outer">
+            <div class="upload-card" id="upload-drop-zone">
+              <div class="upload-pulse"></div>
+              <div class="upload-icon">
+                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="32" cy="32" r="28" stroke="url(#uploadGrad)" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.4"/>
+                  <path d="M32 20v18M25 27l7-7 7 7" stroke="url(#uploadGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M20 44h24" stroke="url(#uploadGrad)" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                  <defs><linearGradient id="uploadGrad" x1="0" y1="0" x2="64" y2="64"><stop stop-color="#a8a4ff"/><stop offset="1" stop-color="#9492ff"/></linearGradient></defs>
+                </svg>
+              </div>
+              <h3 id="drop-zone-label">Drag and drop or click to upload</h3>
+              <input type="file" id="upload-file-input" accept="image/*" class="hidden-input" onchange="handleFileSelect(event)" />
+
+              <!-- File type chips inside drop zone -->
+              <div class="file-type-chips">
+                <button class="file-chip" data-type="document" onclick="event.stopPropagation(); selectFileType('document')">
+                  <span>PDF</span>
+                </button>
+                <button class="file-chip" data-type="audio" onclick="event.stopPropagation(); selectFileType('audio')">
+                  <span>AUDIO</span>
+                </button>
+                <button class="file-chip" data-type="video" onclick="event.stopPropagation(); selectFileType('video')">
+                  <span>VIDEO</span>
+                </button>
+                <button class="file-chip active" data-type="image" onclick="event.stopPropagation(); selectFileType('image')">
+                  <span>IMAGE</span>
+                </button>
+                <button class="file-chip" data-type="text" onclick="event.stopPropagation(); selectFileType('text')">
+                  <span>TEXT</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Preview (shows inside outer card) -->
+            <div id="upload-preview" class="upload-preview hidden">
+              <div class="preview-card">
+                <div class="preview-visual">
+                  <img id="upload-preview-img" src="" alt="Preview" />
+                  <div id="upload-preview-icon" class="preview-file-icon hidden">
+                    <span class="material-icons-outlined">insert_drive_file</span>
+                  </div>
+                </div>
+                <div class="preview-details">
+                  <p id="upload-preview-name" class="preview-filename"></p>
+                  <div class="preview-meta">
+                    <span id="upload-preview-size" class="preview-size"></span>
+                    <span id="upload-preview-type-badge" class="preview-type-badge">IMAGE</span>
+                  </div>
+                </div>
+                <button class="btn-preview-remove" onclick="removeUploadedImage()" aria-label="Remove file">
+                  <span class="material-icons-outlined">close</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Session name input -->
+            <div class="upload-session-name">
+              <input type="text" id="session-name-input" placeholder="Name your content session..." autocomplete="off" />
+            </div>
+
+            <!-- Full-width CTA -->
+            <button id="start-interview-btn" class="btn-start-interview-full" onclick="startInterviewWithImage()" disabled>
+              <span>Start Feedback Interview</span>
+              <span class="material-icons-outlined">arrow_forward</span>
+            </button>
+
+            <!-- Security badges centered -->
+            <div class="upload-security-center">
+              <span>SECURE</span>
+              <span class="security-dot">•</span>
+              <span>ENCRYPTED</span>
+              <span class="security-dot">•</span>
+              <span>PRIVATE</span>
+            </div>
           </div>
-          <h3>Drag & drop your image here</h3>
-          <p class="upload-hint">or click to browse — PNG, JPG, WEBP up to 10 MB</p>
-          <input type="file" id="upload-file-input" accept="image/*" class="hidden-input" onchange="handleFileSelect(event)" />
-          <button class="btn-outline" onclick="document.getElementById('upload-file-input').click()">Browse File</button>
         </div>
-
-        <div id="upload-preview" class="upload-preview hidden">
-          <img id="upload-preview-img" src="" alt="Preview" />
-          <div class="upload-preview-info">
-            <p id="upload-preview-name" class="preview-filename"></p>
-            <button class="btn-remove" onclick="removeUploadedImage()" aria-label="Remove image">✕ Remove</button>
-          </div>
-        </div>
-
-        <button id="start-interview-btn" class="btn-primary btn-large" onclick="startInterviewWithImage()" disabled>
-          Start Interview →
-        </button>
       </div>
     </section>
 
@@ -290,6 +350,99 @@
         </form>
 
         <button class="btn-danger" onclick="handleSignOut()" style="margin-top: 20px;">Sign Out</button>
+      </div>
+    </section>
+
+    <!-- ── SECTION: ADMIN DASHBOARD ──────────── -->
+    <section id="section-admin" class="section hidden">
+      <div class="section-container" style="max-width:1100px">
+        <div class="admin-main-header">
+          <div class="admin-header-left">
+            <h1>System Overview</h1>
+            <span class="admin-live-badge">Live</span>
+          </div>
+          <div class="admin-header-right">
+            <div class="admin-search">
+              <span class="material-icons-outlined">search</span>
+              <input type="text" placeholder="Search resources..." />
+            </div>
+            <button class="admin-notif-btn" aria-label="Notifications">
+              <span class="material-icons-outlined">notifications_none</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="admin-kpi-row" id="admin-kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-data">
+              <span class="kpi-label">Total Interactions</span>
+              <span class="kpi-value" id="kpi-total-sessions">—</span>
+              <span class="kpi-trend up"><span class="material-icons-outlined">trending_up</span> 15.3% vs last month</span>
+            </div>
+            <div class="kpi-icon"><span class="material-icons-outlined">forum</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-data">
+              <span class="kpi-label">Avg. Confidence Score</span>
+              <span class="kpi-value" id="kpi-avg-rating">—</span>
+              <span class="kpi-trend up"><span class="material-icons-outlined">trending_up</span> 0.4% vs last month</span>
+            </div>
+            <div class="kpi-icon"><span class="material-icons-outlined">star</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-data">
+              <span class="kpi-label">Active Sessions</span>
+              <span class="kpi-value" id="kpi-completion">—</span>
+              <span class="kpi-trend down"><span class="material-icons-outlined">trending_down</span> 2% vs last hour</span>
+            </div>
+            <div class="kpi-icon"><span class="material-icons-outlined">check_circle</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-data">
+              <span class="kpi-label">System Latency</span>
+              <span class="kpi-value" id="kpi-total-users">—</span>
+              <span class="kpi-trend optimal"><span class="material-icons-outlined">speed</span> Optimal p95 global</span>
+            </div>
+            <div class="kpi-icon"><span class="material-icons-outlined">people</span></div>
+          </div>
+        </div>
+
+        <!-- Filter Tabs + Sessions Table -->
+        <div class="admin-section-card">
+          <div class="admin-table-header">
+            <h2 class="admin-card-title">
+              <span class="material-icons-outlined">rss_feed</span>
+              Feedback Stream
+            </h2>
+            <div class="admin-table-actions">
+              <div class="admin-filter-tabs" id="admin-filter-tabs">
+                <button class="filter-tab active" data-filter="all" onclick="filterAdminSessions('all')">All</button>
+                <button class="filter-tab" data-filter="image" onclick="filterAdminSessions('image')">
+                  <span class="material-icons-outlined">image</span> Images
+                </button>
+                <button class="filter-tab" data-filter="document" onclick="filterAdminSessions('document')">
+                  <span class="material-icons-outlined">description</span> Docs
+                </button>
+                <button class="filter-tab" data-filter="audio" onclick="filterAdminSessions('audio')">
+                  <span class="material-icons-outlined">headphones</span> Audio
+                </button>
+                <button class="filter-tab" data-filter="video" onclick="filterAdminSessions('video')">
+                  <span class="material-icons-outlined">videocam</span> Video
+                </button>
+              </div>
+              <button class="btn-outline btn-sm" onclick="filterAdminSessions('all')">
+                <span class="material-icons-outlined">filter_list</span> Filter
+              </button>
+              <button class="btn-outline btn-sm">
+                <span class="material-icons-outlined">file_download</span> Export
+              </button>
+            </div>
+          </div>
+          <div class="admin-table-wrap" id="admin-sessions-table">
+            <div class="loading-state"><div class="spinner"></div><p>Loading sessions…</p></div>
+          </div>
+        </div>
       </div>
     </section>
 
