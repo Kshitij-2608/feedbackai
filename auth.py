@@ -36,10 +36,11 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
-def create_token(user_id: int, email: str) -> str:
+def create_token(user_id: int, email: str, is_admin: bool = False) -> str:
     payload = {
         "sub": str(user_id),
         "email": email,
+        "is_admin": is_admin,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=TOKEN_EXPIRY_HOURS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
@@ -56,7 +57,18 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
     payload = decode_token(credentials.credentials)
-    return {"user_id": int(payload["sub"]), "email": payload["email"]}
+    return {
+        "user_id": int(payload["sub"]),
+        "email": payload["email"],
+        "is_admin": payload.get("is_admin", False),
+    }
+
+
+def require_admin(current_user: dict = Depends(get_current_user)):
+    """Dependency that ensures the current user is an admin."""
+    if not current_user.get("is_admin", False):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
 
 
 @router.post("/signup", response_model=TokenResponse)
@@ -74,8 +86,8 @@ async def signup(data: UserCreate):
             )
             user_id = cur.fetchone()["id"]
             conn.commit()
-        token = create_token(user_id, data.email)
-        return TokenResponse(token=token, name=data.name, email=data.email, user_id=user_id)
+        token = create_token(user_id, data.email, is_admin=False)
+        return TokenResponse(token=token, name=data.name, email=data.email, user_id=user_id, is_admin=False)
     except HTTPException:
         raise
     except Exception as e:
@@ -91,14 +103,15 @@ async def login(data: UserLogin):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, name, email, password_hash FROM users WHERE email = %s",
+                "SELECT id, name, email, password_hash, is_admin FROM users WHERE email = %s",
                 (data.email,),
             )
             user = cur.fetchone()
             if not user or not verify_password(data.password, user["password_hash"]):
                 raise HTTPException(status_code=401, detail="Invalid email or password")
-        token = create_token(user["id"], user["email"])
-        return TokenResponse(token=token, name=user["name"], email=user["email"], user_id=user["id"])
+        is_admin = bool(user.get("is_admin", False))
+        token = create_token(user["id"], user["email"], is_admin=is_admin)
+        return TokenResponse(token=token, name=user["name"], email=user["email"], user_id=user["id"], is_admin=is_admin)
     except HTTPException:
         raise
     except Exception as e:
@@ -113,7 +126,7 @@ async def me(current_user: dict = Depends(get_current_user)):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, name, email, created_at FROM users WHERE id = %s",
+                "SELECT id, name, email, is_admin, created_at FROM users WHERE id = %s",
                 (current_user["user_id"],),
             )
             user = cur.fetchone()
@@ -123,6 +136,7 @@ async def me(current_user: dict = Depends(get_current_user)):
                 id=user["id"],
                 name=user["name"],
                 email=user["email"],
+                is_admin=bool(user.get("is_admin", False)),
                 created_at=str(user["created_at"]),
             )
     finally:

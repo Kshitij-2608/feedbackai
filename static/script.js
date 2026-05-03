@@ -87,7 +87,7 @@ async function handleSignUp(e) {
 }
 
 function saveUser(data) {
-  currentUser = { user_id: data.user_id, name: data.name, email: data.email, token: data.token };
+  currentUser = { user_id: data.user_id, name: data.name, email: data.email, token: data.token, is_admin: data.is_admin || false };
   localStorage.setItem('hs_user', JSON.stringify(currentUser));
 }
 
@@ -191,6 +191,11 @@ function enterApp() {
   document.getElementById('account-avatar').textContent = initial;
   document.getElementById('account-name').textContent = currentUser.name;
   document.getElementById('account-email').textContent = currentUser.email;
+  // Show/hide admin tab based on role
+  const adminNav = document.getElementById('nav-admin');
+  if (adminNav) {
+    adminNav.style.display = currentUser.is_admin ? '' : 'none';
+  }
   // Start on interview section
   showSection('interview');
   initInterview();
@@ -200,6 +205,10 @@ function enterApp() {
 const SECTIONS = ['dashboard', 'upload', 'interview', 'summary', 'account', 'admin'];
 
 function showSection(name) {
+  // Prevent non-admins from accessing admin section
+  if (name === 'admin' && (!currentUser || !currentUser.is_admin)) {
+    return;
+  }
   SECTIONS.forEach(s => {
     document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
     const link = document.getElementById(`nav-${s}`);

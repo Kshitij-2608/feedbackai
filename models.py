@@ -39,12 +39,14 @@ class TokenResponse(BaseModel):
     name: str
     email: str
     user_id: int
+    is_admin: bool = False
 
 
 class UserInfo(BaseModel):
     id: int
     name: str
     email: str
+    is_admin: bool = False
     created_at: str
 
 

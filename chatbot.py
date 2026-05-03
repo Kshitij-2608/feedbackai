@@ -84,6 +84,52 @@ def run_completion_bg(db_session: FeedbackSession):
                    WHERE session_id = %s""",
                 (db_session.overall_rating, db_session.summary_json, db_session.session_id),
             )
+
+            # ── Populate session_summaries table ────────────────────────
+            strengths = summary.get("model_strengths", [])
+            weaknesses = summary.get("model_weaknesses", [])
+            # Derive strengths/weaknesses from key_issues + sentiment if LLM didn't provide them
+            if not strengths:
+                sentiment = (summary.get("sentiment") or "").lower()
+                if "positive" in sentiment:
+                    strengths = ["Good user experience", "Met expectations"]
+                else:
+                    strengths = ["Responsive feedback collection"]
+            if not weaknesses:
+                weaknesses = summary.get("key_issues", [])[:3] or ["No specific weaknesses noted"]
+
+            cur.execute(
+                """INSERT INTO session_summaries
+                   (session_id, user_id, content_type, sentiment, rating,
+                    user_interest, interaction_summary, model_strengths,
+                    model_weaknesses, key_issues, suggestions, conversation_highlights)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (session_id) DO UPDATE SET
+                    sentiment = EXCLUDED.sentiment,
+                    rating = EXCLUDED.rating,
+                    user_interest = EXCLUDED.user_interest,
+                    interaction_summary = EXCLUDED.interaction_summary,
+                    model_strengths = EXCLUDED.model_strengths,
+                    model_weaknesses = EXCLUDED.model_weaknesses,
+                    key_issues = EXCLUDED.key_issues,
+                    suggestions = EXCLUDED.suggestions,
+                    conversation_highlights = EXCLUDED.conversation_highlights""",
+                (
+                    db_session.session_id,
+                    db_session.user_id,
+                    db_session.content_type,
+                    summary.get("sentiment"),
+                    db_session.overall_rating,
+                    summary.get("user_interest"),
+                    summary.get("interaction_summary"),
+                    strengths,
+                    weaknesses,
+                    summary.get("key_issues", []),
+                    summary.get("suggestions"),
+                    json.dumps(summary.get("conversation_highlights", [])),
+                ),
+            )
+
             conn.commit()
         print(f"Session {db_session.session_id} completed and saved to DB.")
     except Exception as e:

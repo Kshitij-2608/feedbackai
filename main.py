@@ -174,7 +174,7 @@ async def get_dashboard(current_user: dict = Depends(auth.get_current_user)):
 
 
 @app.get("/api/admin/stats")
-async def admin_stats(current_user: dict = Depends(auth.get_current_user)):
+async def admin_stats(current_user: dict = Depends(auth.require_admin)):
     """Return aggregated stats for the admin dashboard."""
     conn = db.get_connection()
     try:
@@ -224,7 +224,7 @@ async def admin_stats(current_user: dict = Depends(auth.get_current_user)):
 
 
 @app.get("/api/admin/sessions")
-async def admin_sessions(content_type: str = None, current_user: dict = Depends(auth.get_current_user)):
+async def admin_sessions(content_type: str = None, current_user: dict = Depends(auth.require_admin)):
     """Return all sessions, optionally filtered by content type."""
     conn = db.get_connection()
     try:
