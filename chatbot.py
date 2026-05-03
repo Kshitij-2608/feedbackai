@@ -153,7 +153,7 @@ def process_message(
     if len(db_session.logs) == 0 and not message:
         initial_msg = (
             "Hi, I'm your AI feedback assistant. I'll be collecting your feedback "
-            "on the image generation feature to help improve its quality and reliability. "
+            "on the AI-generated content to help improve its quality and reliability. "
             "This session may be recorded for evaluation purposes. Would you like to continue?"
         )
         log_message(db_session, "AI", initial_msg)

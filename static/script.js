@@ -220,12 +220,14 @@ function showSection(name) {
 }
 
 /* ── Upload Section ───────────────────────────────────────────────────────── */
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
 const FILE_TYPE_CONFIG = {
-  image:    { accept: 'image/*', hint: 'PNG, JPG, WEBP up to 100 MB', icon: 'image' },
-  document: { accept: '.pdf,.doc,.docx,.txt,.csv,.xlsx', hint: 'PDF, DOC, TXT, CSV up to 100 MB', icon: 'description' },
-  audio:    { accept: 'audio/*', hint: 'MP3, WAV, FLAC, AAC up to 100 MB', icon: 'headphones' },
-  video:    { accept: 'video/*', hint: 'MP4, WebM, MOV up to 100 MB', icon: 'videocam' },
-  text:     { accept: '.txt,.json,.md,.log,.csv', hint: 'TXT, JSON, MD, LOG, CSV up to 100 MB', icon: 'article' },
+  image:    { accept: 'image/*', hint: 'PNG, JPG, WEBP up to 10 MB', icon: 'image' },
+  document: { accept: '.pdf,.doc,.docx,.txt,.csv,.xlsx', hint: 'PDF, DOC, TXT, CSV up to 10 MB', icon: 'description' },
+  audio:    { accept: 'audio/*', hint: 'MP3, WAV, FLAC, AAC up to 10 MB', icon: 'headphones' },
+  video:    { accept: 'video/*', hint: 'MP4, WebM, MOV up to 10 MB', icon: 'videocam' },
+  text:     { accept: '.txt,.json,.md,.log,.csv', hint: 'TXT, JSON, MD, LOG, CSV up to 10 MB', icon: 'article' },
 };
 
 function selectFileType(type) {
@@ -257,6 +259,10 @@ function formatFileSize(bytes) {
 }
 
 function setUploadFile(file) {
+  if (file.size > MAX_FILE_SIZE) {
+    alert(`File too large (${formatFileSize(file.size)}). Maximum allowed size is 10 MB.`);
+    return;
+  }
   const reader = new FileReader();
   reader.onload = ev => {
     pendingImageB64 = ev.target.result;
