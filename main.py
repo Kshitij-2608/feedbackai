@@ -1,8 +1,11 @@
 import json
 import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import ChatRequest, ChatResponse
@@ -20,9 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if not os.path.exists("static"):
-    os.makedirs("static")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+STATIC_DIR = BASE_DIR / "static"
+if not STATIC_DIR.exists():
+    STATIC_DIR.mkdir(parents=True)
 
 # Include auth router
 app.include_router(auth.router)
@@ -33,9 +36,46 @@ async def startup():
     db.init_db()
 
 
+# ── Explicit static file routes (Vercel-compatible) ─────────────────────────
+# These explicit endpoints ensure CSS/JS are served with correct MIME types
+# even when Vercel's serverless runtime doesn't support StaticFiles mount.
+
+MIME_MAP = {
+    ".css": "text/css",
+    ".js": "application/javascript",
+    ".html": "text/html",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+    ".json": "application/json",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+}
+
+
+@app.get("/static/{file_path:path}")
+async def serve_static(file_path: str):
+    """Serve static files explicitly for Vercel compatibility."""
+    full_path = STATIC_DIR / file_path
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    # Security: prevent path traversal
+    try:
+        full_path.resolve().relative_to(STATIC_DIR.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    suffix = full_path.suffix.lower()
+    content_type = MIME_MAP.get(suffix, "application/octet-stream")
+    content = full_path.read_bytes()
+    return Response(content=content, media_type=content_type)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
-    with open("static/index.html", "r", encoding="utf-8") as f:
+    index_path = STATIC_DIR / "index.html"
+    with open(index_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
