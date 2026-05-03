@@ -1,6 +1,7 @@
 import os
 import json
 import base64
+import time
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -12,7 +13,26 @@ if not api_key:
     print("WARNING: GEMINI_API_KEY not found in environment")
 
 client = genai.Client(api_key=api_key)
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-2.0-flash"  # 1500 RPD free tier (vs 20 RPD for 2.5-flash)
+
+MAX_RETRIES = 3
+
+
+def _generate_with_retry(model, contents, retries=MAX_RETRIES):
+    """Call generate_content with automatic retry on 429 rate-limit errors."""
+    for attempt in range(retries):
+        try:
+            return client.models.generate_content(model=model, contents=contents)
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                wait = min(2 ** attempt * 5, 60)  # 5s, 10s, 20s
+                print(f"Rate limited (attempt {attempt+1}/{retries}), retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            raise  # re-raise non-rate-limit errors
+    # Final attempt without catching
+    return client.models.generate_content(model=model, contents=contents)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -27,7 +47,7 @@ If it is off-topic, output "OFF_TOPIC". If it doesn't clearly fit, output "UNKNO
 Output format: ONLY the exact category string.
 """
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
+        response = _generate_with_retry(model=MODEL, contents=prompt)
         intent = response.text.strip().upper()
         for ai_intent in allowed_intents + ["UNKNOWN", "OFF_TOPIC"]:
             if ai_intent in intent:
@@ -45,7 +65,7 @@ Message: "{message}"
 Output ONLY 'UNSAFE' if it involves hate speech, severe profanity, or explicit harm. Otherwise output 'SAFE'.
 """
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
+        response = _generate_with_retry(model=MODEL, contents=prompt)
         return "UNSAFE" not in response.text.upper()
     except:
         return True
@@ -127,7 +147,7 @@ Output ONLY your next message. Do not include any prefix like "AI:" or "HeuriSen
             print(f"Image decode error: {e}")
 
     try:
-        response = client.models.generate_content(model=MODEL, contents=contents)
+        response = _generate_with_retry(model=MODEL, contents=contents)
         return response.text.strip()
     except Exception as e:
         print(f"LLM Chat Error: {e}")
@@ -163,7 +183,7 @@ Output ONLY valid JSON. No markdown. No code blocks. No extra text.
 """
 
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
+        response = _generate_with_retry(model=MODEL, contents=prompt)
         text = response.text.strip()
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
@@ -201,7 +221,7 @@ Transcript:
 {conversation_text}
 """
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
+        response = _generate_with_retry(model=MODEL, contents=prompt)
         text = response.text.strip()
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
