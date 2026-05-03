@@ -18,7 +18,7 @@ client = genai.Client(api_key=api_key)
 MODEL_CHAIN = [
     "gemini-2.0-flash",       # Primary: 1500 RPD free tier
     "gemini-2.0-flash-lite",  # Fallback 1: separate quota
-    "gemini-1.5-flash",       # Fallback 2: separate quota
+    "gemini-2.5-flash",       # Fallback 2: 20 RPD but valid last resort
 ]
 MODEL = MODEL_CHAIN[0]
 
