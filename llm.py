@@ -13,26 +13,39 @@ if not api_key:
     print("WARNING: GEMINI_API_KEY not found in environment")
 
 client = genai.Client(api_key=api_key)
-MODEL = "gemini-2.0-flash"  # 1500 RPD free tier (vs 20 RPD for 2.5-flash)
 
-MAX_RETRIES = 3
+# Fallback chain: each model has its own separate quota pool
+MODEL_CHAIN = [
+    "gemini-2.0-flash",       # Primary: 1500 RPD free tier
+    "gemini-2.0-flash-lite",  # Fallback 1: separate quota
+    "gemini-1.5-flash",       # Fallback 2: separate quota
+]
+MODEL = MODEL_CHAIN[0]
 
 
-def _generate_with_retry(model, contents, retries=MAX_RETRIES):
-    """Call generate_content with automatic retry on 429 rate-limit errors."""
-    for attempt in range(retries):
-        try:
-            return client.models.generate_content(model=model, contents=contents)
-        except Exception as e:
-            err_str = str(e)
-            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                wait = min(2 ** attempt * 5, 60)  # 5s, 10s, 20s
-                print(f"Rate limited (attempt {attempt+1}/{retries}), retrying in {wait}s...")
-                time.sleep(wait)
-                continue
-            raise  # re-raise non-rate-limit errors
-    # Final attempt without catching
-    return client.models.generate_content(model=model, contents=contents)
+def _generate_with_retry(model=None, contents=None, retries=2):
+    """Try generate_content across multiple models with retry on 429 errors."""
+    models_to_try = [model] if model and model not in MODEL_CHAIN else MODEL_CHAIN
+
+    for m in models_to_try:
+        for attempt in range(retries):
+            try:
+                return client.models.generate_content(model=m, contents=contents)
+            except Exception as e:
+                err_str = str(e)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    if attempt < retries - 1:
+                        wait = 2 ** attempt * 3  # 3s, 6s
+                        print(f"Rate limited on {m} (attempt {attempt+1}), retrying in {wait}s...")
+                        time.sleep(wait)
+                        continue
+                    else:
+                        print(f"Model {m} exhausted, trying next fallback...")
+                        break  # try next model
+                raise  # re-raise non-rate-limit errors
+
+    # All models exhausted — final attempt on primary (will raise if it fails)
+    return client.models.generate_content(model=MODEL_CHAIN[0], contents=contents)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
