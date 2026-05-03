@@ -105,6 +105,27 @@ async def chat(request: ChatRequest):
     return ChatResponse(session_id=request.session_id, message=response_text)
 
 
+@app.post("/api/chat/end")
+async def end_session(session_id: str):
+    """Force-end a session and trigger summary generation."""
+    import threading
+    from chatbot import run_completion_bg
+    if session_id in SESSIONS:
+        session = SESSIONS[session_id]
+        if session.state != "END":
+            session.state = "END"
+            threading.Thread(target=run_completion_bg, args=(session,), daemon=True).start()
+        return {"status": "ended", "session_id": session_id}
+    # Try ending in DB directly
+    conn = db.get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE sessions SET state = 'END', completed_at = NOW() WHERE session_id = %s AND state != 'END'", (session_id,))
+            conn.commit()
+        return {"status": "ended", "session_id": session_id}
+    finally:
+        conn.close()
+
 @app.get("/api/summary/{session_id}")
 async def get_summary(session_id: str):
     """Get the AI-generated summary for a completed session."""

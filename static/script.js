@@ -443,6 +443,24 @@ function showTyping(show) {
   if (show) c.scrollTop = c.scrollHeight;
 }
 
+async function forceEndSession() {
+  if (!currentSessionId || sessionEnded) return;
+  const btn = document.getElementById('end-session-btn');
+  btn.disabled = true;
+  try {
+    await apiFetch(`/api/chat/end?session_id=${encodeURIComponent(currentSessionId)}`, { method: 'POST' });
+    sessionEnded = true;
+    setStatusDot('ended', 'Session Ended');
+    document.getElementById('user-input').disabled = true;
+    document.getElementById('send-btn').disabled = true;
+    addMessage('ai', 'Session ended. Generating your summary…');
+    setTimeout(() => showSection('summary'), 1500);
+  } catch (err) {
+    addMessage('ai', 'Failed to end session: ' + err.message);
+    btn.disabled = false;
+  }
+}
+
 function clearAttachedImage() {
   document.getElementById('image-attached-bar').classList.add('hidden');
   pendingImageB64 = null; pendingImageName = null;

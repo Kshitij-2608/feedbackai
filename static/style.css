@@ -738,6 +738,16 @@ input { font-family: var(--font); }
 }
 .btn-new-session:hover { color: var(--text); border-color: var(--accent); }
 
+.btn-end-session {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25);
+  color: var(--error); border-radius: var(--radius-sm);
+  padding: 6px 12px; font-size: 0.8125rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-end-session:hover { background: rgba(248,113,113,0.2); border-color: var(--error); }
+.btn-end-session:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .chat-container {
   flex: 1; overflow-y: auto; padding: 24px 0; display: flex; flex-direction: column; gap: 16px;
   scrollbar-width: thin; scrollbar-color: var(--border) transparent;
