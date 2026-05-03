@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 .vercel/
 node_modules/
+local_model.py
+models_cache/
+.cache/
